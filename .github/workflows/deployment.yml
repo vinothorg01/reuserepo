@@ -29,3 +29,13 @@ jobs:
         run: |
           echo "the text1 content is $TEXT1"
           echo "the text2 content is $TEXT2"
+
+      - name: New Branch Slack notification
+        if: always()
+        uses: ravsamhq/notify-slack-action@v1
+        with:
+          status: ${{ job.status }}
+          notification_title: 'reuse workflow test'
+          message_format: 'Text1 is $TEXT1 and the text2 is $TEXT2'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TOKEN }}
