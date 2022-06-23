@@ -1,0 +1,31 @@
+name: Reusable Deployment Workflow
+on:
+  workflow_call:
+    inputs:
+      text1:
+        required: true
+        type: string
+      text2:
+        required: true
+        type: string
+
+    secrets:
+      slack_token:
+        required: true
+
+env:
+  SLACK_TOKEN: ${{ secrets.slack_token }}
+  TEXT1: ${{ inputs.text1 }}
+  TEXT2: ${{ inputs.text2 }}
+
+jobs:
+  deploy:
+    name: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Generate Docker Tag
+        run: |
+          echo "the text1 content is $TEXT1"
+          echo "the text2 content is $TEXT2"
