@@ -27,7 +27,7 @@ jobs:
 
       - name: print message
         run: |
-          echo "the text1 content is $TEXT1"
+          echo "the text1 content is ${{ inputs.text1 }}"
           echo "the text2 content is $TEXT2"
 
       - name: New Branch Slack notification
@@ -38,4 +38,4 @@ jobs:
           notification_title: 'reuse workflow test'
           message_format: 'Text1 is ${{ inputs.text1 }} and the text2 is ${{ inputs.text2 }}'
         env:
-          SLACK_WEBHOOK_URL: ${{ env.SLACK_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.slack_token }}
