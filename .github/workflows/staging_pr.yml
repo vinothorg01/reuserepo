@@ -21,7 +21,7 @@ on:
         required: false
         type: string
     secrets:
-      github_token:
+      temp_github_token:
         required: true
       snyk_token:
         required: false
@@ -34,7 +34,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.github_token }}
+          token: ${{ secrets.temp_github_token }}
           fetch-depth: 0
 
       - name: Pylint Code Analysis for DAG's
