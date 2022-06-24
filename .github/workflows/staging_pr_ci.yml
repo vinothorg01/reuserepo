@@ -1,0 +1,74 @@
+name: Reusable Deployment Workflow
+on:
+  workflow_call:
+    inputs:
+      pylint:
+        required: true
+        type: string
+      branch_name:
+        required: true
+        type: string
+      snyk_code_test:
+        required: true
+        type: string
+      snyk_container_test:
+        required: true
+        type: string
+      snyk_code_test_args:
+        required: false
+        type: string
+      snyk_container_test_args:
+        required: false
+        type: string
+    secrets:
+      github_token:
+        required: true
+      snyk_token:
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    name: Staging CI
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.G_TOKEN }}
+          fetch-depth: 0
+
+      - name: Pylint code Analysis for DAG's
+        if: ${{ inputs.pylint }} == true
+        run: |
+          pip install pylint-airflow
+          pylint --load-plugins=pylint_airflow ./dags/**/*.py
+    
+      - name: Build and Tag Docker Image
+        run: |
+          D_IMAGE=ghcr.io/condenast/snyk-testing >> $GITHUB_ENV
+          D_IMAGE_TAG=$D_IMAGE:latest >> $GITHUB_ENV
+          docker build -t $D_IMAGE_TAG .
+          docker image ls
+          #docker push $D_IMAGE --all-tags
+
+      - name: Run Snyk to check code vulnerabilities
+        id: snykcodetest
+        uses: snyk/actions/python-3.8@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN1 }}
+        with:
+          args: --sarif-file-output=snyk.sarif --severity-threshold=low
+
+      - name: Delete previous sarif file
+        run: rm -rf snyk.sarif
+
+      - name: Run Snyk to check Docker image for vulnerabilities
+        id: snykcontainertest
+        uses: snyk/actions/docker@master
+        continue-on-error: true
+        env:
+            SNYK_TOKEN: ${{ secrets.SNYK_TOKEN1 }}
+        with:
+            image: ghcr.io/condenast/snyk-testing
+            args: --file=Dockerfile --sarif-file-output=snyk.sarif --severity-threshold=low

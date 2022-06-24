@@ -3,9 +3,12 @@ on:
   workflow_call:
     inputs:
       text1:
-        required: true
+        required: false
         type: string
       text2:
+        required: false
+        type: string
+      printoutput:
         required: true
         type: string
 
@@ -26,6 +29,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: print message
+        if: ${{ inputs.printoutput }} == true
         run: |
           echo "the text1 content is ${{ inputs.text1 }}"
           echo "the text2 content is $TEXT2"
