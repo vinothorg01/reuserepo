@@ -2,7 +2,7 @@ name: Reusable Deployment Workflow
 on:
   workflow_call:
     inputs:
-      pylint:
+      dag_pylint:
         required: true
         type: string
       branch_name:
@@ -14,10 +14,10 @@ on:
       snyk_container_test:
         required: true
         type: string
-      snyk_code_test_args:
+      snyk_code_test_threshold:
         required: false
         type: string
-      snyk_container_test_args:
+      snyk_container_test_threshold:
         required: false
         type: string
     secrets:
@@ -34,41 +34,41 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.G_TOKEN }}
+          token: ${{ secrets.github_token }}
           fetch-depth: 0
 
-      - name: Pylint code Analysis for DAG's
-        if: ${{ inputs.pylint }} == true
+      - name: Pylint Code Analysis for DAG's
+        if: ${{ inputs.dag_pylint == 'true' }}
         run: |
           pip install pylint-airflow
           pylint --load-plugins=pylint_airflow ./dags/**/*.py
     
       - name: Build and Tag Docker Image
         run: |
-          D_IMAGE=ghcr.io/condenast/snyk-testing >> $GITHUB_ENV
+          D_IMAGE=ghcr.io/condenast/${{ inputs.branch_name }} >> $GITHUB_ENV
           D_IMAGE_TAG=$D_IMAGE:latest >> $GITHUB_ENV
           docker build -t $D_IMAGE_TAG .
           docker image ls
           #docker push $D_IMAGE --all-tags
 
-      - name: Run Snyk to check code vulnerabilities
-        id: snykcodetest
+      - name: Snyk Code Vulnerabilities Check
+        if: ${{ inputs.snyk_code_test == 'true' }}
         uses: snyk/actions/python-3.8@master
         continue-on-error: true
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN1 }}
+          SNYK_TOKEN: ${{ secrets.snyk_token }}
         with:
-          args: --sarif-file-output=snyk.sarif --severity-threshold=low
+          args: --sarif-file-output=snyk.sarif --severity-threshold=${{ inputs.snyk_code_test_threshold }}
 
       - name: Delete previous sarif file
         run: rm -rf snyk.sarif
 
-      - name: Run Snyk to check Docker image for vulnerabilities
-        id: snykcontainertest
+      - name: Snyk Docker Container vulnerabilities Check
+        if: ${{ inputs.snyk_container_test == 'true' }}
         uses: snyk/actions/docker@master
         continue-on-error: true
         env:
-            SNYK_TOKEN: ${{ secrets.SNYK_TOKEN1 }}
+            SNYK_TOKEN: ${{ secrets.snyk_token }}
         with:
             image: ghcr.io/condenast/snyk-testing
-            args: --file=Dockerfile --sarif-file-output=snyk.sarif --severity-threshold=low
+            args: --file=Dockerfile --sarif-file-output=snyk.sarif --severity-threshold=${{ inputs.snyk_container_test_threshold }}
