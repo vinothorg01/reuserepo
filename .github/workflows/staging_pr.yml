@@ -70,5 +70,5 @@ jobs:
         env:
             SNYK_TOKEN: ${{ secrets.snyk_token }}
         with:
-            image: ghcr.io/condenast/snyk-testing
+            image: ghcr.io/condenast/${{ inputs.branch_name }}
             args: --file=Dockerfile --sarif-file-output=snyk.sarif --severity-threshold=${{ inputs.snyk_container_test_threshold }}
