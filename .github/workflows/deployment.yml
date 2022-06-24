@@ -38,4 +38,4 @@ jobs:
           notification_title: 'reuse workflow test'
           message_format: 'Text1 is ${{ env.TEXT1 }} and the text2 is ${{ env.TEXT2 }}'
         env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_TOKEN }}
+          SLACK_WEBHOOK_URL: ${{ secrets.slack_token }}
