@@ -32,7 +32,7 @@ jobs:
         if: ${{ inputs.printoutput }} == true
         run: |
           echo "the text1 content is ${{ inputs.text1 }}"
-          echo "the text2 content is $TEXT2"
+          echo "the text2 content is ${{ inputs.text2 }}"
 
       - name: New Branch Slack notification
         if: always()
