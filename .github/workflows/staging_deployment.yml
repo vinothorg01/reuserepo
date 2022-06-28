@@ -1,4 +1,4 @@
-name: Reusable Deployment Workflow
+name: Staging Deployment Workflow
 on:
   workflow_call:
     secrets:
@@ -11,10 +11,9 @@ env:
   repo_name: ${{ github.event.repository.name }}
 
 jobs:
-  build:
+  staging-deployment:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
-    name: Staging Deployment
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -25,7 +24,6 @@ jobs:
       - name: Staging Tag Creation
         run: |
           git remote set-url origin https://${{ secrets.temp_github_token }}@github.com/CondeNast/${{ env.repo_name }}.git
-          git remote -v
           git fetch --all
           git checkout ${{ github.event.pull_request.base.ref }}
           git pull origin ${{ github.event.pull_request.base.ref }} --tags
@@ -33,14 +31,11 @@ jobs:
           echo "The PR is created from $from_branch_name branch and is merged with ${to_branch} branch successfully"
           tag_find=`git tag --sort version:refname | grep "$from_branch_name" | tail -n1`
           echo "The tags are $tag_find"
-          #REGEX="^[a-zA-Z0-9.-]+$"
           REGEX="^[a-zA-Z0-9.#&/*'+-_]+$"
           if [[ "$tag_find" =~ $REGEX ]]; then
             latest_tag_name=`git tag --sort version:refname | grep "$from_branch_name" | tail -n1`
-            #latest_tag_version=`git tag --sort version:refname | grep "$from_branch_name" | tail -n1 | cut -d '-' -f 3 | cut -c2-`
             latest_tag_version=`printf "%s\n" "${latest_tag_name##*-}" | cut -c2-`
             echo "Latest tag is $latest_tag_name"
-            echo $latest_tag_version
             major=0
             minor=0
             regex="([0-9]+).([0-9]+)"
@@ -49,7 +44,6 @@ jobs:
               minor="${BASH_REMATCH[2]}"
             fi
             minor=$(echo $minor + 1 | bc)
-            #latest_tag_version=`git tag --sort version:refname | tail -n1 | cut -d '-' -f 3 | cut -c2-`
             new_tag=${from_branch_name}-v${major}.${minor}
             git tag $new_tag
             git push origin ${{ github.event.pull_request.base.ref }} --tags

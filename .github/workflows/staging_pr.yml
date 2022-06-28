@@ -1,4 +1,4 @@
-name: Reusable Deployment Workflow
+name: Staging PR Workflow
 on:
   workflow_call:
     inputs:
@@ -27,9 +27,8 @@ on:
         required: false
 
 jobs:
-  build:
+  staging-pr:
     runs-on: ubuntu-latest
-    name: Staging CI
     steps:
       - name: Checkout Code
         uses: actions/checkout@v2
@@ -49,7 +48,6 @@ jobs:
           D_IMAGE_TAG=$D_IMAGE:latest >> $GITHUB_ENV
           docker build -t $D_IMAGE_TAG .
           docker image ls
-          #docker push $D_IMAGE --all-tags
 
       - name: Snyk Code Vulnerabilities Check
         if: ${{ inputs.snyk_code_test == 'true' }}
