@@ -1,0 +1,72 @@
+name: Staging PR Workflow
+on:
+  workflow_call:
+    inputs:
+      dag_pylint:
+        required: true
+        type: string
+      branch_name:
+        required: true
+        type: string
+      snyk_code_test:
+        required: true
+        type: string
+      snyk_container_test:
+        required: true
+        type: string
+      snyk_code_test_threshold:
+        required: false
+        type: string
+      snyk_container_test_threshold:
+        required: false
+        type: string
+    secrets:
+      temp_github_token:
+        required: true
+      snyk_token:
+        required: false
+
+jobs:
+  staging-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.temp_github_token }}
+          fetch-depth: 0
+
+      - name: Pylint Code Analysis for DAG's
+        if: ${{ inputs.dag_pylint == 'true' }}
+        run: |
+          pip install pylint-airflow
+          pylint --load-plugins=pylint_airflow ./dags/**/*.py
+    
+      - name: Build and Tag Docker Image
+        run: |
+          D_IMAGE=ghcr.io/condenast/${{ inputs.branch_name }} >> $GITHUB_ENV
+          D_IMAGE_TAG=$D_IMAGE:latest >> $GITHUB_ENV
+          docker build -t $D_IMAGE_TAG .
+          docker image ls
+
+      - name: Snyk Code Vulnerabilities Check
+        if: ${{ inputs.snyk_code_test == 'true' }}
+        uses: snyk/actions/python-3.8@master
+        continue-on-error: true
+        env:
+          SNYK_TOKEN: ${{ secrets.snyk_token }}
+        with:
+          args: --sarif-file-output=snyk.sarif --severity-threshold=${{ inputs.snyk_code_test_threshold }}
+
+      - name: Delete previous sarif file
+        run: rm -rf snyk.sarif
+
+      - name: Snyk Docker Container vulnerabilities Check
+        if: ${{ inputs.snyk_container_test == 'true' }}
+        uses: snyk/actions/docker@master
+        continue-on-error: true
+        env:
+            SNYK_TOKEN: ${{ secrets.snyk_token }}
+        with:
+            image: ghcr.io/condenast/${{ inputs.branch_name }}
+            args: --file=Dockerfile --sarif-file-output=snyk.sarif --severity-threshold=${{ inputs.snyk_container_test_threshold }}
